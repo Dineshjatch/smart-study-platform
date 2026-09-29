@@ -1,0 +1,81 @@
+# ==============================
+# Java / Maven
+# ==============================
+
+**/target/
+**/pom.xml.tag
+**/pom.xml.releaseBackup
+**/pom.xml.versionsBackup
+**/pom.xml.next
+**/release.properties
+
+
+# ==============================
+# IDE files
+# ==============================
+
+.idea/
+*.iml
+.vscode/
+*.classpath
+*.project
+*.settings/
+
+
+# ==============================
+# Environment / secrets
+# ==============================
+
+.env
+.env.*
+!.env.example
+
+**/application-local.properties
+**/application-secret.properties
+
+
+# ==============================
+# Logs
+# ==============================
+
+*.log
+logs/
+
+
+# ==============================
+# OS generated files
+# ==============================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+
+# ==============================
+# Node / frontend
+# ==============================
+
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+
+# ==============================
+# Terraform
+# ==============================
+
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+
+# ==============================
+# Temporary files
+# ==============================
+
+*.tmp
+*.temp
+*.swp
+*.swo
