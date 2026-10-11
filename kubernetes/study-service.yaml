@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: study-service
+  namespace: smart-study
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: study-service
+  template:
+    metadata:
+      labels:
+        app: study-service
+    spec:
+      containers:
+        - name: study-service
+          image: smart-study-study-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8082
+
+          env:
+            - name: DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: smart-study-config
+                  key: STUDY_DB_URL
+
+            - name: DB_USERNAME
+              value: "postgres"
+
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: study-postgres-secret
+                  key: password
+
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Duser.timezone=UTC"
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: study-service
+  namespace: smart-study
+spec:
+  type: ClusterIP
+  selector:
+    app: study-service
+  ports:
+    - port: 8082
+      targetPort: 8082

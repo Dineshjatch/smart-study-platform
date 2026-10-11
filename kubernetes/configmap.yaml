@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smart-study-config
+  namespace: smart-study
+data:
+  USER_SERVICE_URL: "http://user-service:8081"
+  STUDY_SERVICE_URL: "http://study-service:8082"
+  QUIZ_SERVICE_URL: "http://quiz-service:8083"
+
+  USER_DB_URL: "jdbc:postgresql://user-postgres:5432/user_db"
+  STUDY_DB_URL: "jdbc:postgresql://study-postgres:5432/study_db"
+  QUIZ_DB_URL: "jdbc:postgresql://quiz-postgres:5432/quiz_db"
+
+  OPENAI_BASE_URL: "https://studyplanneragent-resource.openai.azure.com/openai/v1"

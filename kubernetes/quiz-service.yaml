@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quiz-service
+  namespace: smart-study
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quiz-service
+  template:
+    metadata:
+      labels:
+        app: quiz-service
+    spec:
+      containers:
+        - name: quiz-service
+          image: smart-study-quiz-service:k8s-v3
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8083
+
+          env:
+            - name: DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: smart-study-config
+                  key: QUIZ_DB_URL
+
+            - name: DB_USERNAME
+              value: "postgres"
+
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: quiz-postgres-secret
+                  key: password
+
+            - name: AZURE_OPENAI_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: azure-openai-secret
+                  key: api-key
+
+            - name: OPENAI_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: smart-study-config
+                  key: OPENAI_BASE_URL
+
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Duser.timezone=UTC"
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quiz-service
+  namespace: smart-study
+spec:
+  type: ClusterIP
+  selector:
+    app: quiz-service
+  ports:
+    - port: 8083
+      targetPort: 8083
