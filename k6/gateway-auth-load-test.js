@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
-const BASE_URL = 'http://localhost:30080';
+const BASE_URL = 'http://localhost:38080';
 
 export const options = {
     stages: [
@@ -12,9 +12,17 @@ export const options = {
 };
 
 export default function () {
+    const token = __ENV.JWT_TOKEN;
+
+    if (!token) {
+        throw new Error(
+            'JWT_TOKEN is missing. Set it in PowerShell before running k6.'
+        );
+    }
+
     const response = http.get(`${BASE_URL}/api/quizzes`, {
         headers: {
-            Authorization: `Bearer ${__ENV.JWT_TOKEN}`,
+            Authorization: `Bearer ${token}`,
         },
     });
 

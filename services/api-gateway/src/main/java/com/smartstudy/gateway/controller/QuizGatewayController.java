@@ -208,12 +208,13 @@ public class QuizGatewayController {
                 new HttpEntity<>(body, headers);
 
         try {
-            return restTemplate.exchange(
+            ResponseEntity<String> response = restTemplate.exchange(
                     quizServiceUrl + path,
                     HttpMethod.POST,
                     entity,
                     String.class
             );
+            return buildJsonResponse(response);
         } catch (RestClientResponseException e) {
             return downstreamError(e);
         }
@@ -230,12 +231,13 @@ public class QuizGatewayController {
                 new HttpEntity<>(body, headers);
 
         try {
-            return restTemplate.exchange(
+            ResponseEntity<String> response = restTemplate.exchange(
                     quizServiceUrl + path,
                     HttpMethod.PUT,
                     entity,
                     String.class
             );
+            return buildJsonResponse(response);
         } catch (RestClientResponseException e) {
             return downstreamError(e);
         }
@@ -251,12 +253,13 @@ public class QuizGatewayController {
                 new HttpEntity<>(headers);
 
         try {
-            return restTemplate.exchange(
+            ResponseEntity<String> response = restTemplate.exchange(
                     quizServiceUrl + path,
                     HttpMethod.GET,
                     entity,
                     String.class
             );
+            return buildJsonResponse(response);
         } catch (RestClientResponseException e) {
             return downstreamError(e);
         }
@@ -272,12 +275,13 @@ public class QuizGatewayController {
                 new HttpEntity<>(headers);
 
         try {
-            return restTemplate.exchange(
+            ResponseEntity<String> response = restTemplate.exchange(
                     quizServiceUrl + path,
                     HttpMethod.DELETE,
                     entity,
                     String.class
             );
+            return buildJsonResponse(response);
         } catch (RestClientResponseException e) {
             return downstreamError(e);
         }
@@ -315,6 +319,16 @@ public class QuizGatewayController {
         }
 
         return (Long) userId;
+    }
+
+    private ResponseEntity<String> buildJsonResponse(
+            ResponseEntity<String> response
+    ) {
+        // Forward only the status and JSON body, not hop-by-hop headers.
+        return ResponseEntity
+                .status(response.getStatusCode())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(response.getBody());
     }
 
     private ResponseEntity<String> downstreamError(

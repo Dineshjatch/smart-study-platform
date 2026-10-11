@@ -10,10 +10,13 @@ export const options = {
 };
 
 export default function () {
-    const response = http.get('http://localhost:30080/api/quizzes');
+    const response = http.get(
+        'http://localhost:38080/api/quizzes'
+    );
 
     check(response, {
-        'request completed': (r) => r.status === 200 || r.status === 401,
+        'request completed': (r) =>
+            r.status === 200 || r.status === 401,
     });
 
     sleep(1);
