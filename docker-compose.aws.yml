@@ -1,0 +1,139 @@
+services:
+  user-postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD:?Set USER_DB_PASSWORD in .env.aws}
+    volumes:
+      - user-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d user_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 256m
+    networks:
+      - smart-study
+
+  study-postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: study_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${STUDY_DB_PASSWORD:?Set STUDY_DB_PASSWORD in .env.aws}
+    volumes:
+      - study-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d study_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 256m
+    networks:
+      - smart-study
+
+  quiz-postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: quiz_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${QUIZ_DB_PASSWORD:?Set QUIZ_DB_PASSWORD in .env.aws}
+    volumes:
+      - quiz-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d quiz_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 256m
+    networks:
+      - smart-study
+
+  user-service:
+    image: ${DOCKERHUB_USER:-dineshjat18}/smart-study-user-service:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://user-postgres:5432/user_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${USER_DB_PASSWORD:?Set USER_DB_PASSWORD in .env.aws}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.aws}
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -Duser.timezone=UTC"
+    depends_on:
+      user-postgres:
+        condition: service_healthy
+    mem_limit: 512m
+    networks:
+      - smart-study
+
+  study-service:
+    image: ${DOCKERHUB_USER:-dineshjat18}/smart-study-study-service:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://study-postgres:5432/study_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${STUDY_DB_PASSWORD:?Set STUDY_DB_PASSWORD in .env.aws}
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -Duser.timezone=UTC"
+    depends_on:
+      study-postgres:
+        condition: service_healthy
+    mem_limit: 512m
+    networks:
+      - smart-study
+
+  quiz-service:
+    image: ${DOCKERHUB_USER:-dineshjat18}/smart-study-quiz-service:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://quiz-postgres:5432/quiz_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${QUIZ_DB_PASSWORD:?Set QUIZ_DB_PASSWORD in .env.aws}
+      AZURE_OPENAI_KEY: ${AZURE_OPENAI_KEY:?Set AZURE_OPENAI_KEY in .env.aws}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://studyplanneragent-resource.openai.azure.com/openai/v1}
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -Duser.timezone=UTC"
+    depends_on:
+      quiz-postgres:
+        condition: service_healthy
+    mem_limit: 512m
+    networks:
+      - smart-study
+
+  api-gateway:
+    image: ${DOCKERHUB_USER:-dineshjat18}/smart-study-api-gateway:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      USER_SERVICE_URL: http://user-service:8081
+      STUDY_SERVICE_URL: http://study-service:8082
+      QUIZ_SERVICE_URL: http://quiz-service:8083
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.aws}
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -Duser.timezone=UTC"
+    depends_on:
+      - user-service
+      - study-service
+      - quiz-service
+    mem_limit: 512m
+    networks:
+      - smart-study
+
+  frontend:
+    image: ${DOCKERHUB_USER:-dineshjat18}/smart-study-frontend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api-gateway
+    mem_limit: 128m
+    networks:
+      - smart-study
+
+volumes:
+  user-postgres-data:
+  study-postgres-data:
+  quiz-postgres-data:
+
+networks:
+  smart-study:
+    driver: bridge
