@@ -150,6 +150,14 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env.aws}
       GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_SMTP_ENABLED: "true"
+      GF_SMTP_HOST: ${GRAFANA_SMTP_HOST:-smtp.gmail.com:587}
+      GF_SMTP_USER: ${GRAFANA_SMTP_USER:?Set GRAFANA_SMTP_USER in .env.aws}
+      GF_SMTP_PASSWORD: ${GRAFANA_SMTP_PASSWORD:?Set GRAFANA_SMTP_PASSWORD in .env.aws}
+      GF_SMTP_FROM_ADDRESS: ${GRAFANA_SMTP_FROM_ADDRESS:?Set GRAFANA_SMTP_FROM_ADDRESS in .env.aws}
+      GF_SMTP_FROM_NAME: "Smart Study Platform Grafana"
+      GF_SMTP_STARTTLS_POLICY: "MandatoryStartTLS"
+      GF_SMTP_SKIP_VERIFY: "false"
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:
