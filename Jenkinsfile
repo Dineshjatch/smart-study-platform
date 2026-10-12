@@ -381,6 +381,73 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy to AWS EC2') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'aws-jenkins-deploy',
+                    usernameVariable: 'AWS_ACCESS_KEY_ID',
+                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                )]) {
+                    withEnv(['AWS_DEFAULT_REGION=us-east-1', 'AWS_PAGER=']) {
+                        sh '''
+                            set -eu
+                            set +x
+
+                            INSTANCE_ID="i-0e980509fecf1cd16"
+                            PARAM_FILE="$(mktemp)"
+                            trap 'rm -f "$PARAM_FILE"' EXIT
+
+                            printf '{"ImageTag":["%s"]}' "$BUILD_NUMBER" > "$PARAM_FILE"
+
+                            COMMAND_ID="$(aws ssm send-command \
+                                --document-name SmartStudyDeploy \
+                                --instance-ids "$INSTANCE_ID" \
+                                --parameters "file://$PARAM_FILE" \
+                                --query 'Command.CommandId' \
+                                --output text)"
+
+                            echo "AWS deployment command submitted."
+
+                            for attempt in $(seq 1 60); do
+                                STATUS="$(aws ssm get-command-invocation \
+                                    --command-id "$COMMAND_ID" \
+                                    --instance-id "$INSTANCE_ID" \
+                                    --query 'Status' \
+                                    --output text 2>/dev/null || true)"
+
+                                case "$STATUS" in
+                                    Success)
+                                        echo "AWS deployment completed successfully."
+                                        aws ssm get-command-invocation \
+                                            --command-id "$COMMAND_ID" \
+                                            --instance-id "$INSTANCE_ID" \
+                                            --query 'StandardOutputContent' \
+                                            --output text
+                                        exit 0
+                                        ;;
+                                    Failed|Cancelled|TimedOut|Cancelling)
+                                        echo "AWS deployment failed with status: $STATUS"
+                                        aws ssm get-command-invocation \
+                                            --command-id "$COMMAND_ID" \
+                                            --instance-id "$INSTANCE_ID" \
+                                            --query 'StandardErrorContent' \
+                                            --output text || true
+                                        exit 1
+                                        ;;
+                                    *)
+                                        sleep 5
+                                        ;;
+                                esac
+                            done
+
+                            echo "Timed out waiting for AWS deployment."
+                            exit 1
+                        '''
+                    }
+                }
+            }
+        }
     }
 
     post {

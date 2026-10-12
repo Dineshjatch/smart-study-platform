@@ -210,12 +210,12 @@ output "instance_id" {
 
 output "public_ip" {
   description = "Public IP of the EC2 instance"
-  value       = aws_instance.app.public_ip
+  value       = aws_eip.app.public_ip
 }
 
 output "application_url" {
   description = "HTTP URL of the application"
-  value       = "http://${aws_instance.app.public_ip}"
+  value       = "http://${aws_eip.app.public_ip}"
 }
 
 output "s3_bucket_name" {
@@ -225,4 +225,87 @@ output "s3_bucket_name" {
 
 output "region" {
   value = var.aws_region
+}
+resource "aws_eip" "app" {
+  domain   = "vpc"
+  instance = aws_instance.app.id
+
+  tags = {
+    Name    = "smart-study-app-eip"
+    Project = "SmartStudyPlatform"
+  }
+}
+resource "aws_ssm_document" "smart_study_deploy" {
+  name            = "SmartStudyDeploy"
+  document_type   = "Command"
+  document_format = "JSON"
+
+  content = jsonencode({
+    schemaVersion = "2.2"
+    description   = "Deploy a numeric Smart Study Docker image tag to the existing EC2 instance."
+
+    parameters = {
+      ImageTag = {
+        type           = "String"
+        description    = "Numeric Jenkins build number to deploy"
+        allowedPattern = "^[0-9]+$"
+      }
+    }
+
+    mainSteps = [
+      {
+        action = "aws:runShellScript"
+        name   = "DeploySmartStudy"
+
+        inputs = {
+          runCommand = [
+            "set -euo pipefail",
+            "cd /opt/smart-study",
+            "sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG={{ ImageTag }}/' .env.aws",
+            "docker compose --env-file .env.aws -f docker-compose.aws.yml pull",
+            "docker compose --env-file .env.aws -f docker-compose.aws.yml up -d",
+            "docker compose --env-file .env.aws -f docker-compose.aws.yml ps"
+          ]
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_user" "jenkins_deploy" {
+  name = "smart-study-jenkins-deploy"
+
+  tags = {
+    Project = "SmartStudyPlatform"
+    Purpose = "Jenkins deployment to existing EC2 instance"
+  }
+}
+
+resource "aws_iam_user_policy" "jenkins_deploy" {
+  name = "smart-study-ssm-deploy-only"
+  user = aws_iam_user.jenkins_deploy.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Sid    = "SendOnlyApprovedDeploymentDocument"
+        Effect = "Allow"
+        Action = [
+          "ssm:SendCommand"
+        ]
+        Resource = [
+          aws_ssm_document.smart_study_deploy.arn,
+          aws_instance.app.arn
+        ]
+      },
+      {
+        Sid      = "ReadCommandResult"
+        Effect   = "Allow"
+        Action   = ["ssm:GetCommandInvocation"]
+        Resource = "*"
+      }
+    ]
+  })
 }
