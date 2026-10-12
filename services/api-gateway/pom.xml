@@ -38,6 +38,21 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+
+        <!-- Application health and monitoring endpoints -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- Export application metrics in Prometheus format -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+
         <!-- JWT support for authentication -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
