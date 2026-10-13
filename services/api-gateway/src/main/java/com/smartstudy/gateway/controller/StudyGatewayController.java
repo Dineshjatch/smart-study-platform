@@ -166,12 +166,13 @@ public class StudyGatewayController {
                 new HttpEntity<>(body, headers);
 
         try {
-            return restTemplate.exchange(
+            ResponseEntity<String> response = restTemplate.exchange(
                     studyServiceUrl + path,
                     HttpMethod.POST,
                     entity,
                     String.class
             );
+            return buildJsonResponse(response);
         } catch (RestClientResponseException e) {
             return downstreamError(e);
         }
@@ -188,12 +189,13 @@ public class StudyGatewayController {
                 new HttpEntity<>(body, headers);
 
         try {
-            return restTemplate.exchange(
+            ResponseEntity<String> response = restTemplate.exchange(
                     studyServiceUrl + path,
                     HttpMethod.PUT,
                     entity,
                     String.class
             );
+            return buildJsonResponse(response);
         } catch (RestClientResponseException e) {
             return downstreamError(e);
         }
@@ -209,12 +211,13 @@ public class StudyGatewayController {
                 new HttpEntity<>(headers);
 
         try {
-            return restTemplate.exchange(
+            ResponseEntity<String> response = restTemplate.exchange(
                     studyServiceUrl + path,
                     HttpMethod.GET,
                     entity,
                     String.class
             );
+            return buildJsonResponse(response);
         } catch (RestClientResponseException e) {
             return downstreamError(e);
         }
@@ -230,12 +233,13 @@ public class StudyGatewayController {
                 new HttpEntity<>(headers);
 
         try {
-            return restTemplate.exchange(
+            ResponseEntity<String> response = restTemplate.exchange(
                     studyServiceUrl + path,
                     HttpMethod.DELETE,
                     entity,
                     String.class
             );
+            return buildJsonResponse(response);
         } catch (RestClientResponseException e) {
             return downstreamError(e);
         }
@@ -273,6 +277,15 @@ public class StudyGatewayController {
         }
 
         return (Long) userId;
+    }
+
+    private ResponseEntity<String> buildJsonResponse(
+            ResponseEntity<String> response
+    ) {
+        return ResponseEntity
+                .status(response.getStatusCode())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(response.getBody());
     }
 
     private ResponseEntity<String> downstreamError(
